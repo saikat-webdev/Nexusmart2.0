@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="NexusMart - Where Excellence Meets Convenience"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <title>NexusMart</title>
+    
+    <!-- Print Styles -->
+    <style media="print">
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+      
+      body * {
+        visibility: hidden;
+      }
+      
+      #invoice-content, #invoice-content * {
+        visibility: visible;
+      }
+      
+      #invoice-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      button {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      To continuously work with the React app, refer to the README guide:
+      https://create-react-app.dev/docs/getting-started/
+    -->
+  </body>
+</html>

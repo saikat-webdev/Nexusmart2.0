@@ -1,0 +1,166 @@
+/* Responsive Design Improvements */
+@media (max-width: 1024px) {
+  /* Tablet styles */
+  .sidebar-mobile {
+    position: fixed;
+    left: -100%;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  .sidebar-mobile.open {
+    left: 0;
+  }
+
+  .main-content-tablet {
+    margin-left: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile styles */
+  .sidebar-mobile {
+    width: 280px;
+  }
+
+  .main-content-mobile {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .btn-mobile {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-mobile {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  .form-mobile input,
+  .form-mobile select,
+  .form-mobile textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+@media (max-width: 480px) {
+  /* Small mobile styles */
+  .text-responsive {
+    font-size: 0.875rem;
+  }
+
+  .heading-responsive {
+    font-size: 1.5rem;
+  }
+
+  .card-padding-mobile {
+    padding: 1rem;
+  }
+
+  .grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Touch-friendly elements */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-touch {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  /* Hide print buttons and non-print elements */
+  .no-print {
+    display: none !important;
+  }
+
+  .print-break {
+    page-break-before: always;
+  }
+
+  /* Remove backdrop and modal positioning */
+  .invoice-modal-container {
+    position: static !important;
+    inset: auto !important;
+    padding: 0 !important;
+    background: white !important;
+    margin: 0 !important;
+  }
+
+  /* Remove opacity and background color from modal container */
+  .invoice-modal-container.fixed {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  /* Style the invoice modal box */
+  .invoice-modal-container .bg-white.rounded-lg {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Invoice header */
+  .invoice-modal-container .bg-blue-600 {
+    background: white !important;
+    color: black !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .invoice-modal-container .bg-blue-600 h2 {
+    color: black !important;
+    font-size: 1.75rem !important;
+  }
+
+  .invoice-modal-container .bg-blue-600 p {
+    color: black !important;
+  }
+
+  .invoice-modal-container .bg-blue-600 h3 {
+    color: black !important;
+  }
+
+  /* Invoice content */
+  #invoice-content {
+    page-break-inside: avoid;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure tables print properly */
+  table, thead, tbody, tr, td, th {
+    page-break-inside: avoid;
+  }
+
+  /* Modal footer buttons hidden on print */
+  .invoice-modal-container .bg-gray-50 {
+    display: none !important;
+  }
+}
