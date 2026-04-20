@@ -232,7 +232,7 @@ composer install
 cp .env.example .env  ### if .env already not there
 php artisan key:generate
 php artisan migrate
-php artisan db:seed   ### in case you want to seed the database with test data
+php artisan db:seed   ### in case you want to seed the database with the test data (this include admin credentials of admin@nexusmart.com)
 php artisan serve
 ```
 
