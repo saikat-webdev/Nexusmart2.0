@@ -232,6 +232,7 @@ composer install
 cp .env.example .env  ### if .env already not there
 php artisan key:generate
 php artisan migrate
+php artisan db:seed   ### in case you want to seed the database with test data
 php artisan serve
 ```
 
