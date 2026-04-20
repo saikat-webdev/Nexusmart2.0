@@ -7,16 +7,18 @@ const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
-    { path: '/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/pos', icon: '🛒', label: 'POS / Checkout' },
-    { path: '/products', icon: '📦', label: 'Products' },
-    { path: '/inventory', icon: '📋', label: 'Inventory' },
-    { path: '/sales', icon: '💰', label: 'Sales Reports' },
-    { path: '/customers', icon: '👥', label: 'Customers' },
-    { path: '/coupons', icon: '🎫', label: 'Coupons' },
-    { path: '/settings', icon: '⚙️', label: 'Settings' },
-  ];
+   const navItems = [
+     { path: '/dashboard', icon: '📊', label: 'Dashboard' },
+     { path: '/pos', icon: '🛒', label: 'POS / Checkout' },
+     { path: '/products', icon: '📦', label: 'Products' },
+     { path: '/inventory', icon: '📋', label: 'Inventory' },
+     { path: '/sales', icon: '💰', label: 'Sales Reports' },
+     { path: '/returns', icon: '↩️', label: 'Sales Returns' },
+     { path: '/customers', icon: '👥', label: 'Customers' },
+     { path: '/suppliers', icon: '🏭', label: 'Suppliers' },
+     { path: '/coupons', icon: '🎫', label: 'Coupons' },
+     { path: '/settings', icon: '⚙️', label: 'Settings' },
+   ];
 
   return (
     <>

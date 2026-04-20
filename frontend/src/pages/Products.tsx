@@ -15,6 +15,8 @@ interface Product {
   is_active: boolean;
   category_id: number | null;
   category?: { id: number; name: string };
+  supplier_id: number | null;
+  supplier?: { id: number; name: string };
 }
 
 interface Category {
@@ -22,9 +24,15 @@ interface Category {
   name: string;
 }
 
+interface Supplier {
+  id: number;
+  name: string;
+}
+
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -43,11 +51,13 @@ const Products: React.FC = () => {
     reorder_level: '10',
     is_active: true,
     category_id: '',
+    supplier_id: '',
   });
 
   useEffect(() => {
     fetchProducts(currentPage, searchTerm, categoryFilter);
     fetchCategories();
+    fetchSuppliers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -94,11 +104,20 @@ const Products: React.FC = () => {
   const fetchCategories = async () => {
     try {
       const response = await api.get('/categories');
-      // Handle both direct array and wrapped responses
       const categoryData = response.data.data || response.data;
       setCategories(Array.isArray(categoryData) ? categoryData : []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await api.get('/suppliers');
+      const supplierData = response.data.data || response.data;
+      setSuppliers(Array.isArray(supplierData) ? supplierData : []);
+    } catch (error) {
+      console.error('Failed to fetch suppliers:', error);
     }
   };
 
@@ -111,6 +130,7 @@ const Products: React.FC = () => {
         stock_quantity: parseInt(formData.stock_quantity),
         reorder_level: parseInt(formData.reorder_level),
         category_id: formData.category_id ? parseInt(formData.category_id) : null,
+        supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : null,
       };
 
       if (editingProduct) {
@@ -141,6 +161,7 @@ const Products: React.FC = () => {
       reorder_level: product.reorder_level.toString(),
       is_active: product.is_active,
       category_id: product.category_id?.toString() || '',
+      supplier_id: product.supplier_id?.toString() || '',
     });
     setShowModal(true);
   };
@@ -169,6 +190,7 @@ const Products: React.FC = () => {
       reorder_level: '10',
       is_active: true,
       category_id: '',
+      supplier_id: '',
     });
   };
 
@@ -193,19 +215,32 @@ const Products: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Products Management</h1>
-          <p className="text-gray-600 mt-1">Manage your product inventory</p>
-        </div>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-        >
-          + Add Product
-        </button>
-      </div>
+       {/* Header */}
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-3xl font-bold text-gray-800">Products Management</h1>
+           <p className="text-gray-600 mt-1">Manage your product inventory</p>
+         </div>
+         <div className="flex gap-3">
+           <button
+             onClick={() => {
+               const params = new URLSearchParams();
+               if (searchTerm) params.append('search', searchTerm);
+               if (categoryFilter && categoryFilter !== 'all') params.append('category', String(categoryFilter));
+               window.open(`/api/products/export?${params.toString()}`, '_blank');
+             }}
+             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+           >
+             📥 Export CSV
+           </button>
+           <button
+             onClick={() => { resetForm(); setShowModal(true); }}
+             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+           >
+             + Add Product
+           </button>
+         </div>
+       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -249,15 +284,16 @@ const Products: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU/Barcode</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
+               <tr>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU/Barcode</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredProducts.map((product) => (
@@ -272,9 +308,12 @@ const Products: React.FC = () => {
                     <div className="text-sm text-gray-900">{product.sku}</div>
                     {product.barcode && <div className="text-sm text-gray-500">{product.barcode}</div>}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {product.category?.name || 'N/A'}
-                  </td>
+                   <td className="px-6 py-4 text-sm text-gray-500">
+                     {product.category?.name || 'N/A'}
+                   </td>
+                   <td className="px-6 py-4 text-sm text-gray-500">
+                     {product.supplier?.name || 'N/A'}
+                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     ₹{(product.price as number).toFixed(2)}
                   </td>
@@ -379,19 +418,32 @@ const Products: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                     <select
+                       value={formData.category_id}
+                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     >
+                       <option value="">Select Category</option>
+                       {categories.map(cat => (
+                         <option key={cat.id} value={cat.id}>{cat.name}</option>
+                       ))}
+                     </select>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                     <select
+                       value={formData.supplier_id}
+                       onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     >
+                       <option value="">Select Supplier</option>
+                       {suppliers.map(sup => (
+                         <option key={sup.id} value={sup.id}>{sup.name}</option>
+                       ))}
+                     </select>
+                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹) *</label>
                     <input

@@ -59,14 +59,22 @@ class Sale extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    /**
-     * Get the SaleItems associated with this sale.
-     */
-    public function saleItems()
-    {
-        // A sale has many sale items
-        return $this->hasMany(SaleItem::class);
-    }
+     /**
+      * Get the SaleItems associated with this sale.
+      */
+     public function saleItems()
+     {
+         // A sale has many sale items
+         return $this->hasMany(SaleItem::class);
+     }
+
+     /**
+      * Get the returns associated with this sale.
+      */
+     public function returns()
+     {
+         return $this->hasMany(SaleReturn::class);
+     }
 
     // --- Helper methods for calculating totals ---
     // These can be useful if you don't store subtotals, tax, etc. directly,

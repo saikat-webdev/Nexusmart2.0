@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use App\Http\Resources\SaleResource; // We'll create this next
+use App\Http\Resources\SaleResource;
+use Illuminate\Support\Facades\Response;
 
 class SaleController extends Controller
 {
@@ -24,23 +25,86 @@ class SaleController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = $request->input('per_page', 15);
-        
-        $sales = Sale::with('user', 'saleItems.product')
-            ->orderBy('sale_datetime', 'desc')
-            ->paginate($perPage);
+     public function index(Request $request): JsonResponse
+     {
+         $perPage = $request->input('per_page', 15);
+         
+         $query = Sale::with('user', 'saleItems.product');
 
-        return SaleResource::collection($sales)->response()->setStatusCode(200);
-    }
+         // Filter by invoice number if provided
+         if ($request->has('invoice_number')) {
+             $query->where('invoice_number', $request->input('invoice_number'));
+         }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
+         // Filter by date range if provided
+         if ($request->has('from_date')) {
+             $query->whereDate('sale_datetime', '>=', $request->input('from_date'));
+         }
+         if ($request->has('to_date')) {
+             $query->whereDate('sale_datetime', '<=', $request->input('to_date'));
+         }
+
+         $sales = $query->orderBy('sale_datetime', 'desc')->paginate($perPage);
+
+         return SaleResource::collection($sales)->response()->setStatusCode(200);
+     }
+
+     /**
+      * Export sales to CSV
+      */
+     public function export(Request $request)
+     {
+         $query = Sale::with(['user', 'customer', 'saleItems.product']);
+
+         // Apply same filters as index
+         if ($request->has('invoice_number')) {
+             $query->where('invoice_number', $request->input('invoice_number'));
+         }
+         if ($request->has('from_date')) {
+             $query->whereDate('sale_datetime', '>=', $request->input('from_date'));
+         }
+         if ($request->has('to_date')) {
+             $query->whereDate('sale_datetime', '<=', $request->input('to_date'));
+         }
+
+         $sales = $query->orderBy('sale_datetime', 'desc')->get();
+
+         $filename = 'sales_' . now()->format('Ymd_His') . '.csv';
+         $headers = [
+             'Content-Type' => 'text/csv; charset=UTF-8',
+             'Content-Disposition' => "attachment; filename=\"$filename\"",
+         ];
+
+         $callback = function() use ($sales) {
+             $file = fopen('php://output', 'w');
+             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+             fputcsv($file, ['ID', 'Invoice Number', 'Date', 'Customer', 'Cashier', 'Payment Method', 'Subtotal', 'Tax', 'Discount', 'Total']);
+             foreach ($sales as $sale) {
+                 fputcsv($file, [
+                     $sale->id,
+                     $sale->invoice_number,
+                     $sale->sale_datetime ? \Carbon\Carbon::parse($sale->sale_datetime)->format('Y-m-d H:i') : '',
+                     optional($sale->customer)->name ?? 'Walk-in',
+                     optional($sale->user)->name ?? 'N/A',
+                     $sale->payment_method ?? 'cash',
+                     number_format($sale->subtotal, 2, '.', ''),
+                     number_format($sale->tax_amount, 2, '.', ''),
+                     number_format($sale->discount_amount, 2, '.', ''),
+                     number_format($sale->total_amount, 2, '.', ''),
+                 ]);
+             }
+             fclose($file);
+         };
+
+         return response()->stream($callback, 200, $headers);
+     }
+
+     /**
+      * Display the specified resource.
+      *
+      * @param  int  $id
+      * @return \Illuminate\Http\JsonResponse
+      */
     public function show(int $id): JsonResponse
     {
         // EAGER LOAD relationships for the specific sale

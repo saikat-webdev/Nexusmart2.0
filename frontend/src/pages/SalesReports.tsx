@@ -80,21 +80,32 @@ const SalesReports: React.FC = () => {
   const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount.toString()), 0);
   const avgTransactionValue = sales.length > 0 ? totalRevenue / sales.length : 0;
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Sales Reports & Analytics</h1>
-          <p className="text-gray-600 mt-1">Comprehensive sales performance insights</p>
-        </div>
-        <button
-          onClick={() => fetchSalesData(currentPage)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          🔄 Refresh Data
-        </button>
-      </div>
+   return (
+     <div className="space-y-6">
+       {/* Header */}
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-3xl font-bold text-gray-800">Sales Reports & Analytics</h1>
+           <p className="text-gray-600 mt-1">Comprehensive sales performance insights</p>
+         </div>
+         <div className="flex gap-3">
+           <button
+             onClick={() => {
+               const params = new URLSearchParams();
+               window.open(`/api/sales/export?${params.toString()}`, '_blank');
+             }}
+             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+           >
+             📥 Export CSV
+           </button>
+           <button
+             onClick={() => fetchSalesData(currentPage)}
+             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+           >
+             🔄 Refresh Data
+           </button>
+         </div>
+       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

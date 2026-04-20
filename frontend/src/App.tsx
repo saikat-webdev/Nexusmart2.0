@@ -12,9 +12,11 @@ import POSPage from './pages/POSPage';
 import Products from './pages/Products';
 import Inventory from './pages/Inventory';
 import SalesReports from './pages/SalesReports';
-import Customers from './pages/Customers';
-import Settings from './pages/Settings';
-import Coupons from './pages/Coupons';
+ import Customers from './pages/Customers';
+ import Suppliers from './pages/Suppliers';
+ import Returns from './pages/Returns';
+ import Coupons from './pages/Coupons';
+ import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -68,8 +70,10 @@ function App() {
               <Route path="pos" element={<POSPage />} />
               <Route path="products" element={<Products />} />
               <Route path="inventory" element={<Inventory />} />
-              <Route path="sales" element={<SalesReports />} />
-              <Route path="customers" element={<Customers />} />
+               <Route path="sales" element={<SalesReports />} />
+               <Route path="returns" element={<Returns />} />
+               <Route path="customers" element={<Customers />} />
+              <Route path="suppliers" element={<Suppliers />} />
               <Route path="coupons" element={<Coupons />} />
               <Route path="settings" element={<Settings />} />
             </Route>

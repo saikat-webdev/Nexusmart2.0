@@ -43,19 +43,27 @@ class SaleItem extends Model
         'line_item_discount' => 'decimal:2',
     ];
 
-    /**
-     * Get the sale that this item belongs to.
-     */
-    public function sale()
-    {
-        return $this->belongsTo(Sale::class);
-    }
+     /**
+      * Get the sale that this item belongs to.
+      */
+     public function sale()
+     {
+         return $this->belongsTo(Sale::class);
+     }
 
-    /**
-     * Get the product associated with this sale item.
-     */
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
+     /**
+      * Get the returns associated with this sale item.
+      */
+     public function returns()
+     {
+         return $this->hasMany(SaleReturn::class);
+     }
+
+     /**
+      * Get the product associated with this sale item.
+      */
+     public function product()
+     {
+         return $this->belongsTo(Product::class);
+     }
 }

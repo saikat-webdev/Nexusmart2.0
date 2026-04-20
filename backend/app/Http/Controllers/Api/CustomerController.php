@@ -52,12 +52,61 @@ class CustomerController extends Controller
         
         $customers = $query->paginate($perPage);
         
-        return CustomerResource::collection($customers);
-    }
+         return CustomerResource::collection($customers);
+     }
 
-    /**
-     * Store a newly created customer.
-     */
+     /**
+      * Export customers to CSV
+      */
+     public function export(Request $request)
+     {
+         $query = Customer::query()
+             ->withCount('sales')
+             ->withCount(['sales as total_purchases'])
+             ->withSum('sales as total_spent', 'total_amount');
+
+         $search = $request->input('search');
+         if ($search) {
+             $query->where(function($q) use ($search) {
+                 $q->where('name', 'LIKE', "%{$search}%")
+                   ->orWhere('email', 'LIKE', "%{$search}%")
+                   ->orWhere('phone', 'LIKE', "%{$search}%")
+                   ->orWhere('address', 'LIKE', "%{$search}%");
+             });
+         }
+
+         $customers = $query->orderByDesc('total_spent')->get();
+
+         $filename = 'customers_' . now()->format('Ymd_His') . '.csv';
+         $headers = [
+             'Content-Type' => 'text/csv; charset=UTF-8',
+             'Content-Disposition' => "attachment; filename=\"$filename\"",
+         ];
+
+         $callback = function() use ($customers) {
+             $file = fopen('php://output', 'w');
+             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+             fputcsv($file, ['ID', 'Name', 'Email', 'Phone', 'Address', 'Total Purchases', 'Total Spent']);
+             foreach ($customers as $customer) {
+                 fputcsv($file, [
+                     $customer->id,
+                     $customer->name,
+                     $customer->email ?? '',
+                     $customer->phone ?? '',
+                     $customer->address ?? '',
+                     $customer->total_purchases ?? 0,
+                     number_format($customer->total_spent ?? 0, 2, '.', ''),
+                 ]);
+             }
+             fclose($file);
+         };
+
+         return response()->stream($callback, 200, $headers);
+     }
+
+     /**
+      * Store a newly created customer.
+      */
     public function store(Request $request)
     {
         $request->validate([

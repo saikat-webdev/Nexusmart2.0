@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import api from '../services/api'; // Our configured axios instance
-import { useCart } from '../contexts/CartContext'; // Our custom cart hook
-import { useAuth } from '../contexts/AuthContext'; // Import auth context
-import { useAppConfig, getConfigAsNumber, getConfigAsString } from '../contexts/AppConfigContext'; // Import app config
-import { CouponInput } from '../components/CouponInput'; // Import coupon component
+import api from '../services/api';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useAppConfig, getConfigAsNumber, getConfigAsString } from '../contexts/AppConfigContext';
+import { CouponInput } from '../components/CouponInput';
 import LoadingSpinner from '../components/LoadingSpinner';
+import BarcodeScanner from '../components/BarcodeScanner';
+import { printReceipt, generateReceiptHTML } from '../utils/receiptPrinter';
 
 // Define the structure of a Product as received from the API
 interface Product {
@@ -200,10 +202,11 @@ const POSPage: React.FC = () => {
   // Checkout confirmation modal state
   const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
   
-  // Barcode scanner state
-  const [barcodeBuffer, setBarcodeBuffer] = useState<string>('');
-  const [lastKeyTime, setLastKeyTime] = useState<number>(0);
-  const [scanningActive, setScanningActive] = useState<boolean>(false);
+   // Barcode scanner state
+   const [barcodeBuffer, setBarcodeBuffer] = useState<string>('');
+   const [lastKeyTime, setLastKeyTime] = useState<number>(0);
+   const [scanningActive, setScanningActive] = useState<boolean>(false);
+   const [showCameraScanner, setShowCameraScanner] = useState<boolean>(false);
   
   // --- Fetch Products ---
   const fetchProducts = useCallback(async () => {
@@ -285,47 +288,45 @@ const POSPage: React.FC = () => {
     console.log('Barcode scanned:', barcode);
     
     try {
-      // Search for product by barcode
-      const response = await api.get('/products', {
-        params: { search: barcode, is_active: true }
-      });
+      const response = await api.post('/products/find-by-barcode', { code: barcode });
+      const product = response.data;
 
-      // Handle both direct array and paginated responses
-      const productData = response.data.data || response.data;
-      const foundProducts = Array.isArray(productData) ? productData : [];
-      
-      // Find exact barcode match
-      const product = foundProducts.find((p: Product) => 
-        p.barcode && p.barcode.toLowerCase() === barcode.toLowerCase()
-      );
-
-      if (product) {
-        // Product found - add to cart
-        const priceAsNumber = parseFloat(product.price.toString());
-        if (!isNaN(priceAsNumber)) {
-          addItemToCart({
-            product_id: product.id,
-            name: product.name,
-            sku: product.sku,
-            unit_price: priceAsNumber,
-            quantity: 1,
-          });
-          toast.success(`✅ ${product.name} added to cart!`, {
-            icon: '📦',
-            duration: 2000,
-          });
-        }
-      } else {
-        // Product not found
+      // Product found - add to cart
+      const priceAsNumber = parseFloat(product.price.toString());
+      if (!isNaN(priceAsNumber)) {
+        addItemToCart({
+          product_id: product.id,
+          name: product.name,
+          sku: product.sku,
+          unit_price: priceAsNumber,
+          quantity: 1,
+        });
+        toast.success(`✅ ${product.name} added to cart!`, {
+          icon: '📦',
+          duration: 2000,
+        });
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
         toast.error(`❌ Product with barcode "${barcode}" not found`, {
           duration: 3000,
         });
+      } else {
+        console.error('Error searching product by barcode:', err);
+        toast.error('Failed to search product. Please try again.');
       }
-    } catch (err) {
-      console.error('Error searching product by barcode:', err);
-      toast.error('Failed to search product. Please try again.');
     }
   }, [addItemToCart]);
+
+   // Handle barcode from camera scanner
+   const handleCameraBarcodeDetected = useCallback((barcode: string) => {
+     // BarcodeScanner will handle closing itself after detection
+     processBarcodeInput(barcode);
+   }, [processBarcodeInput]);
+
+   const handleCloseScanner = useCallback(() => {
+     setShowCameraScanner(false);
+   }, []);
 
   // Barcode Scanner: Listen for keyboard events
   useEffect(() => {
@@ -543,131 +544,25 @@ const POSPage: React.FC = () => {
     const storeTagline = getConfigAsString(appConfig, 'store_tagline', 'Where Excellence Meets Convenience');
 
     const handlePrint = () => {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
+      const receiptData = {
+        sale,
+        items: sale.items || [],
+        storeName,
+        storeTagline,
+        storeAddress: getConfigAsString(appConfig, 'store_address', ''),
+        storePhone: getConfigAsString(appConfig, 'store_phone', ''),
+        cashierName: user?.name || 'Cashier',
+        paymentMethod: sale.paymentMethod || 'cash',
+        subtotal: sale.subtotal || cartSubtotal,
+        taxAmount: sale.taxAmount || (Math.max(cartSubtotal - discountAmount, 0) * vatRate),
+        discountAmount: sale.discountAmount || discountAmount,
+        totalAmount: sale.total || (Math.max(cartSubtotal - discountAmount, 0) + (Math.max(cartSubtotal - discountAmount, 0) * vatRate)),
+        transactionDate: new Date(sale.date || Date.now()),
+        invoiceNumber: sale.invoice_number || 'INV',
+      };
 
-      const invoiceHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${storeName} - Invoice #${sale?.invoice_number || 'INV'}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
-            .company-name { font-size: 24px; font-weight: bold; color: #2563EB; }
-            .tagline { color: #666; margin-top: 5px; }
-            .invoice-details { margin: 20px 0; }
-            .invoice-details table { width: 100%; }
-            .invoice-details td { padding: 8px; font-size: 14px; }
-            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .items-table th { background-color: #f3f4f6; padding: 10px; text-align: left; border-bottom: 2px solid #333; font-weight: bold; }
-            .items-table td { padding: 10px; border-bottom: 1px solid #ddd; }
-            .items-table tr:last-child td { border-bottom: 2px solid #333; }
-            .totals { margin-top: 20px; }
-            .totals-table { margin-left: auto; min-width: 350px; }
-            .totals-table tr td { padding: 8px 15px; }
-            .total-row { font-weight: bold; font-size: 16px; border-top: 2px solid #333; background-color: #f9fafb; }
-            .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 13px; }
-            @media print {
-              body { padding: 0; margin: 0; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="company-name">🏪 ${storeName}</div>
-            <p class="tagline">${storeTagline}</p>
-          </div>
-
-          <div class="invoice-details">
-            <table>
-              <tr>
-                <td><strong>Invoice Number:</strong></td>
-                <td>${sale?.invoice_number || 'N/A'}</td>
-                <td><strong>Date:</strong></td>
-                <td>${sale?.date || new Date().toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td><strong>Customer:</strong></td>
-                <td>${sale?.customerName || 'Walk-in Customer'}</td>
-                <td><strong>Payment Method:</strong></td>
-                <td>CASH</td>
-              </tr>
-              <tr>
-                <td><strong>Cashier:</strong></td>
-                <td>${sale?.cashierName || 'N/A'}</td>
-                <td></td>
-                <td></td>
-              </tr>
-            </table>
-          </div>
-
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>SKU</th>
-                <th style="text-align: center;">Quantity</th>
-                <th style="text-align: right;">Unit Price</th>
-                <th style="text-align: right;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sale?.items?.map((item: any) => `
-                <tr>
-                  <td>${item.name || 'Unknown Product'}</td>
-                  <td>${item.sku || 'N/A'}</td>
-                  <td style="text-align: center;">${item.quantity}</td>
-                  <td style="text-align: right;">₹${parseFloat(item.unit_price).toFixed(2)}</td>
-                  <td style="text-align: right;">₹${(parseFloat(item.unit_price) * item.quantity).toFixed(2)}</td>
-                </tr>
-              `).join('') || '<tr><td colspan="5" style="text-align: center;">No items</td></tr>'}
-            </tbody>
-          </table>
-
-          <div class="totals">
-            <table class="totals-table">
-              <tr>
-                <td>Subtotal:</td>
-                <td style="text-align: right;">₹${parseFloat(sale?.subtotal || 0).toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Tax (${(vatRate * 100).toFixed(0)}%):</td>
-                <td style="text-align: right;">₹${parseFloat(sale?.taxAmount || 0).toFixed(2)}</td>
-              </tr>
-              ${sale?.discountAmount > 0 ? `
-              <tr>
-                <td>Discount${sale?.couponCode ? ` (${sale.couponCode})` : ''}:</td>
-                <td style="text-align: right; color: #15803d;">-â‚¹${parseFloat(sale?.discountAmount || 0).toFixed(2)}</td>
-              </tr>
-              ` : ''}
-              <tr class="total-row">
-                <td>Total Amount:</td>
-                <td style="text-align: right;">₹${parseFloat(sale?.total || 0).toFixed(2)}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="footer">
-            <p>Thank you for your business!</p>
-            <p>This is a computer-generated invoice.</p>
-          </div>
-
-          <div class="no-print" style="text-align: center; margin-top: 30px;">
-            <button onclick="window.print()" style="padding: 10px 20px; background-color: #2563EB; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 10px;">
-              🖨️ Print Invoice
-            </button>
-            <button onclick="window.close()" style="padding: 10px 20px; background-color: #6B7280; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
-              Close
-            </button>
-          </div>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.write(invoiceHTML);
-      printWindow.document.close();
+      const receiptHTML = generateReceiptHTML(receiptData);
+      printReceipt(receiptHTML);
     };
 
     const handleNewSale = () => {
@@ -966,21 +861,27 @@ const POSPage: React.FC = () => {
         </div>
 
         <div className="bg-gray-50 flex-1 overflow-y-auto p-4">
-          <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-            <input
-              type="text"
-              placeholder="🔍 Search products by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-            />
-            <button
-              onClick={fetchProducts}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
-            >
-              Search
-            </button>
-          </div>
+        <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+          <input
+            type="text"
+            placeholder="🔍 Search products by name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+          />
+          <button
+            onClick={() => setShowCameraScanner(true)}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition flex items-center gap-2"
+          >
+            📷 Scan
+          </button>
+          <button
+            onClick={fetchProducts}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          >
+            Search
+          </button>
+        </div>
 
           {loading && <LoadingSpinner message="Loading products..." />}
           {error && <p className="text-red-600 bg-red-50 border border-red-300 p-4 rounded-lg">{error}</p>}
@@ -1004,6 +905,14 @@ const POSPage: React.FC = () => {
       <div className="w-full lg:w-80 bg-white border-t border-gray-200 lg:border-t-0 lg:border-l overflow-y-auto">
         <CartDisplay onCheckout={handleCheckout} vatRate={vatRate} />
       </div>
+
+      {/* Camera Barcode Scanner Modal */}
+      {showCameraScanner && (
+        <BarcodeScanner
+          onScannerDetected={handleCameraBarcodeDetected}
+          onClose={handleCloseScanner}
+        />
+      )}
     </div>
   );
 };

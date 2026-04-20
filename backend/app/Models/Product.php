@@ -15,18 +15,19 @@ class Product extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'name',
-        'sku',
-        'barcode',
-        'image_url',
-        'description',
-        'price',
-        'stock_quantity',
-        'reorder_level',
-        'is_active',
-        'category_id',
-    ];
+     protected $fillable = [
+         'name',
+         'sku',
+         'barcode',
+         'image_url',
+         'description',
+         'price',
+         'stock_quantity',
+         'reorder_level',
+         'is_active',
+         'category_id',
+         'supplier_id',
+     ];
 
     /**
      * The attributes that should be cast.
@@ -54,6 +55,14 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the supplier of this product
+     */
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     // Optional: A method to quickly check if it's available

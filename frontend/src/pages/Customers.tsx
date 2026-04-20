@@ -279,19 +279,29 @@ const Customers: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Customer Management</h1>
-          <p className="text-gray-600 mt-1">Manage your customer database</p>
-        </div>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-        >
-          + Add Customer
-        </button>
-      </div>
+       {/* Header */}
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-3xl font-bold text-gray-800">Customer Management</h1>
+           <p className="text-gray-600 mt-1">Manage your customer database</p>
+         </div>
+         <div className="flex gap-3">
+           <button
+             onClick={() => {
+               window.open('/api/customers/export', '_blank');
+             }}
+             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+           >
+             📥 Export CSV
+           </button>
+           <button
+             onClick={() => { resetForm(); setShowModal(true); }}
+             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+           >
+             + Add Customer
+           </button>
+         </div>
+       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

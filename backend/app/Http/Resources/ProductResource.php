@@ -12,22 +12,24 @@ class ProductResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'sku' => $this->sku,
-            'description' => $this->description,
-            'price' => (float) $this->price,
-            'stock_quantity' => $this->stock_quantity,
-            'is_active' => $this->is_active,
-            'category_id' => $this->category_id ?? null,
-            'category' => $this->whenLoaded('category'),
-            'barcode' => $this->barcode ?? null,
-            'reorder_level' => $this->reorder_level ?? 10,
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
-        ];
-    }
+     public function toArray(Request $request): array
+     {
+         return [
+             'id' => $this->id,
+             'name' => $this->name,
+             'sku' => $this->sku,
+             'description' => $this->description,
+             'price' => (float) $this->price,
+             'stock_quantity' => $this->stock_quantity,
+             'is_active' => $this->is_active,
+             'category_id' => $this->category_id ?? null,
+             'category' => $this->whenLoaded('category'),
+             'supplier_id' => $this->supplier_id ?? null,
+             'supplier' => $this->whenLoaded('supplier'),
+             'barcode' => $this->barcode ?? null,
+             'reorder_level' => $this->reorder_level ?? 10,
+             'created_at' => $this->created_at?->toISOString(),
+             'updated_at' => $this->updated_at?->toISOString(),
+         ];
+     }
 }
