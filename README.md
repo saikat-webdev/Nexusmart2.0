@@ -229,7 +229,7 @@ NexusMart/
 ```bash
 cd backend
 composer install
-cp .env.example .env
+cp .env.example .env  ### if .env already not there
 php artisan key:generate
 php artisan migrate
 php artisan serve
