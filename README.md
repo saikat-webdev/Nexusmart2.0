@@ -58,7 +58,7 @@ NexusMart/
 - Barcode scanning support
 - Product search
 - Cart management
-- Multiple payment methods
+- Multiple payment methods (Only cash payment method available as of now)
 - Receipt printing
 
 ### Products
